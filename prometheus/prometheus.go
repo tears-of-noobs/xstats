@@ -7,10 +7,11 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/xstats"
 )
 
-type sender struct {
+type Sender struct {
 	http.Handler
 
 	counters   map[string]*prometheus.CounterVec
@@ -29,9 +30,9 @@ func New(addr string) xstats.Sender {
 }
 
 // NewHandler creates a prometheus publisher - a http.Handler and an xstats.Sender.
-func NewHandler() *sender {
-	return &sender{
-		Handler:    prometheus.Handler(),
+func NewHandler() *Sender {
+	return &Sender{
+		Handler:    promhttp.Handler(),
 		counters:   make(map[string]*prometheus.CounterVec),
 		gauges:     make(map[string]*prometheus.GaugeVec),
 		histograms: make(map[string]*prometheus.HistogramVec),
@@ -41,7 +42,7 @@ func NewHandler() *sender {
 // Gauge implements xstats.Sender interface
 //
 // Mark the tags as "key:value".
-func (s *sender) Gauge(stat string, value float64, tags ...string) {
+func (s *Sender) Gauge(stat string, value float64, tags ...string) {
 	s.RLock()
 	m, ok := s.gauges[stat]
 	s.RUnlock()
@@ -63,7 +64,7 @@ func (s *sender) Gauge(stat string, value float64, tags ...string) {
 // Count implements xstats.Sender interface
 //
 // Mark the tags as "key:value".
-func (s *sender) Count(stat string, count float64, tags ...string) {
+func (s *Sender) Count(stat string, count float64, tags ...string) {
 	s.RLock()
 	m, ok := s.counters[stat]
 	s.RUnlock()
@@ -85,7 +86,7 @@ func (s *sender) Count(stat string, count float64, tags ...string) {
 // Histogram implements xstats.Sender interface
 //
 // Mark the tags as "key:value".
-func (s *sender) Histogram(stat string, value float64, tags ...string) {
+func (s *Sender) Histogram(stat string, value float64, tags ...string) {
 	s.RLock()
 	m, ok := s.histograms[stat]
 	s.RUnlock()
@@ -107,7 +108,7 @@ func (s *sender) Histogram(stat string, value float64, tags ...string) {
 // Timing implements xstats.Sender interface - simulates Timing with Gauge.
 //
 // Mark the tags as "key:value".
-func (s *sender) Timing(stat string, duration time.Duration, tags ...string) {
+func (s *Sender) Timing(stat string, duration time.Duration, tags ...string) {
 	s.Gauge(stat, float64(duration/time.Millisecond), tags...)
 }
 
